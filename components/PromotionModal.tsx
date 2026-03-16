@@ -27,8 +27,8 @@ export default function PromotionModal({ branding, onSelect, onClose, loading }:
   const hasFeatured = !!branding.stripe_account_id && !!branding.stripe_featured_price_id;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
         {/* Header */}
         <div className="px-6 pt-6 pb-4">
           <h2 className="text-2xl font-bold text-gray-900">Promotion Options</h2>

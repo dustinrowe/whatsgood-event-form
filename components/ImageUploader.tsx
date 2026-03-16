@@ -78,17 +78,19 @@ export default function ImageUploader({ images, onChange, apiBase }: Props) {
         />
         {uploading ? (
           <div className="flex flex-col items-center gap-3">
-            <div className="relative w-10 h-10">
-              <svg className="w-10 h-10 -rotate-90" viewBox="0 0 36 36">
-                <circle cx="18" cy="18" r="15" fill="none" stroke="#e5e7eb" strokeWidth="3" />
+            <div className="relative w-12 h-12">
+              {/* Track */}
+              <svg className="w-12 h-12 -rotate-90" viewBox="0 0 44 44">
+                <circle cx="22" cy="22" r="18" fill="none" stroke="#e5e7eb" strokeWidth="3.5" />
+                {/* Spinning indeterminate arc */}
                 <circle
-                  cx="18" cy="18" r="15" fill="none" stroke="#6b7280" strokeWidth="3"
-                  strokeDasharray={`${Math.round((doneCount / uploadCount) * 94)} 94`}
+                  cx="22" cy="22" r="18" fill="none" stroke="#6b7280" strokeWidth="3.5"
+                  strokeDasharray="28 85"
                   strokeLinecap="round"
-                  style={{ transition: "stroke-dasharray 0.3s ease" }}
+                  style={{ animation: "spin 0.9s linear infinite", transformOrigin: "50% 50%" }}
                 />
               </svg>
-              <span className="absolute inset-0 flex items-center justify-center text-xs font-medium text-gray-600">
+              <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-gray-500">
                 {doneCount}/{uploadCount}
               </span>
             </div>
