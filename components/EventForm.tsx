@@ -75,6 +75,8 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
   const [waitingForPayment, setWaitingForPayment] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [tagSuggestState, setTagSuggestState] = useState<"idle" | "loading" | "error">("idle");
+  const [tagSuggestError, setTagSuggestError] = useState<string | null>(null);
   const waitingRef = useRef(false);
 
   useEffect(() => {
@@ -164,6 +166,33 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
     }
   }
 
+  async function suggestTags() {
+    if (!form.title.trim() && !form.description.trim()) {
+      setTagSuggestError("Add a title or description first.");
+      return;
+    }
+    setTagSuggestState("loading");
+    setTagSuggestError(null);
+    try {
+      const res = await fetch("/api/suggest-tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: form.title, description: form.description, tags }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Suggestion failed");
+      // Map returned IDs → names (SearchableSelect multi-mode tracks by name)
+      const suggestedNames = (data.tag_ids as number[])
+        .map(id => tags.find(t => t.id === id)?.name)
+        .filter((n): n is string => !!n);
+      set("tags", suggestedNames);
+      setTagSuggestState("idle");
+    } catch (err) {
+      setTagSuggestError(err instanceof Error ? err.message : "Something went wrong");
+      setTagSuggestState("error");
+    }
+  }
+
   const focusRingStyle = { "--tw-ring-color": `${primary}40` } as React.CSSProperties;
 
   // Light tint of the brand color for the page background
@@ -249,7 +278,32 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
           </div>
 
           <div data-error={!!errors.tags}>
-            <Label required>Tags</Label>
+            <div className="flex items-center justify-between mb-1.5">
+              <Label required>Tags</Label>
+              <button
+                type="button"
+                onClick={suggestTags}
+                disabled={tagSuggestState === "loading"}
+                title="Suggest tags with AI"
+                className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-lg transition-colors disabled:opacity-50"
+                style={{ color: primary, backgroundColor: `${primary}12` }}
+                onMouseEnter={e => { if (tagSuggestState !== "loading") (e.currentTarget as HTMLElement).style.backgroundColor = `${primary}22`; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.backgroundColor = `${primary}12`; }}
+              >
+                {tagSuggestState === "loading" ? (
+                  <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                  </svg>
+                ) : (
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M15 4V2m0 14v-2M8 9H6m12 0h-2M13.6 6.4l1.4-1.4M8.4 17.6l1.4-1.4M13.6 13.6l1.4 1.4M8.4 6.4 7 5M3 3l18 18" />
+                    <path d="m3 9 2.5 2.5L9 8" />
+                  </svg>
+                )}
+                {tagSuggestState === "loading" ? "Suggesting…" : "Suggest with AI"}
+              </button>
+            </div>
             <SearchableSelect
               mode="multi"
               options={tags}
@@ -259,6 +313,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
               primaryColor={primary}
               hasError={!!errors.tags}
             />
+            {tagSuggestError && <p className="mt-1 text-xs text-amber-600">{tagSuggestError}</p>}
             <FieldError msg={errors.tags} />
           </div>
         </Section>
