@@ -52,6 +52,7 @@ export async function submitBasicEvent(
       tags: form.tags,
       categories: form.categories,
       image_urls: form.image_urls,
+      recurrence: form.recurrence || null,
     }),
   });
   if (!res.ok) {
@@ -87,6 +88,7 @@ export async function createFeaturedCheckout(
         tags: form.tags,
         categories: form.categories,
         image_urls: form.image_urls,
+        recurrence: form.recurrence || null,
       },
     }),
   });

@@ -9,6 +9,7 @@ interface Props {
   hasError?: boolean;
   primaryColor?: string;
   minDate?: string; // "YYYY-MM-DD" — days before this are greyed out and unselectable
+  dateOnly?: boolean; // skip time step, store time as 00:00
 }
 
 const MONTHS = [
@@ -64,6 +65,7 @@ export default function DateTimePicker({
   hasError,
   primaryColor = "#3B82F6",
   minDate,
+  dateOnly = false,
 }: Props) {
   const today = new Date();
 
@@ -117,6 +119,12 @@ export default function DateTimePicker({
     const mm = String(viewMonth + 1).padStart(2, "0");
     const dd = String(day).padStart(2, "0");
     const datePart = `${viewYear}-${mm}-${dd}`;
+    if (dateOnly) {
+      onChange(`${datePart}T00:00`);
+      setOpen(false);
+      setStep("date");
+      return;
+    }
     const timePart = parsedTime || "12:00";
     onChange(`${datePart}T${timePart}`);
     setStep("time");
@@ -172,7 +180,7 @@ export default function DateTimePicker({
         </svg>
 
         <span className={`flex-1 ${value ? "text-gray-900" : "text-gray-400"}`}>
-          {value ? formatDisplay(value) : placeholder}
+          {value ? (dateOnly ? formatDisplay(value).split("  ")[0] : formatDisplay(value)) : placeholder}
         </span>
 
         {value && (

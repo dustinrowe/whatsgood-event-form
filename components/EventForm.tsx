@@ -27,8 +27,10 @@ const initialForm: EventFormData = {
   location_id: null,
   price: "",
   is_free: false,
+  all_day: false,
   start_date: "",
   end_date: "",
+  recurrence: "",
   tags: [],
   categories: [],
   image_urls: [],
@@ -113,7 +115,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
       if (!form.location_id) e.location_id = "Required";
     }
     if (!form.start_date) e.start_date = "Required";
-    if (!form.end_date) e.end_date = "Required";
+    if (form.recurrence && !form.end_date) e.end_date = "Required when recurring";
     if (form.tags.length === 0) e.tags = "Select at least one tag";
     if (form.image_urls.length === 0) e.image_urls = "At least one image is required";
     setErrors(e);
@@ -214,9 +216,31 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
             <FieldError msg={errors.description} />
           </div>
 
+          {/* All day toggle */}
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <div
+                onClick={() => {
+                  const next = !form.all_day;
+                  set("all_day", next);
+                  // Strip time from existing dates when enabling
+                  if (next) {
+                    if (form.start_date) set("start_date", form.start_date.slice(0, 10) + "T00:00");
+                    if (form.end_date) set("end_date", form.end_date.slice(0, 10) + "T00:00");
+                  }
+                }}
+                className="w-10 h-6 rounded-full transition-colors relative cursor-pointer flex-shrink-0"
+                style={{ backgroundColor: form.all_day ? primary : "#d1d5db" }}
+              >
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.all_day ? "translate-x-5" : "translate-x-1"}`} />
+              </div>
+              <span className="text-sm text-gray-700 font-medium">All day</span>
+            </label>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div data-error={!!errors.start_date}>
-              <Label required>Start Date & Time</Label>
+              <Label required>Start</Label>
               <DateTimePicker
                 value={form.start_date}
                 onChange={v => set("start_date", v)}
@@ -224,11 +248,12 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
                 hasError={!!errors.start_date}
                 primaryColor={primary}
                 minDate={new Date().toISOString().slice(0, 10)}
+                dateOnly={form.all_day}
               />
               <FieldError msg={errors.start_date} />
             </div>
             <div data-error={!!errors.end_date}>
-              <Label required>End Date & Time</Label>
+              <Label required={!!form.recurrence}>End</Label>
               <DateTimePicker
                 value={form.end_date}
                 onChange={v => set("end_date", v)}
@@ -236,8 +261,41 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
                 hasError={!!errors.end_date}
                 primaryColor={primary}
                 minDate={form.start_date ? form.start_date.slice(0, 10) : new Date().toISOString().slice(0, 10)}
+                dateOnly={form.all_day}
               />
               <FieldError msg={errors.end_date} />
+            </div>
+          </div>
+
+          {/* Recurring event */}
+          <div>
+            <Label>Recurring Event</Label>
+            <div className="space-y-2 mt-1">
+              {[
+                { value: "daily", label: "Daily", helper: "The event occurs multiple days in a row such as Friday, Saturday, Sunday." },
+                { value: "weekly", label: "Weekly", helper: "The event happens at the same time every week." },
+              ].map(opt => (
+                <label key={opt.value} className="flex items-start gap-3 cursor-pointer group">
+                  <div className="mt-0.5 flex-shrink-0">
+                    <div
+                      onClick={() => set("recurrence", form.recurrence === opt.value ? "" : opt.value)}
+                      className="w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors"
+                      style={{
+                        borderColor: form.recurrence === opt.value ? primary : "#d1d5db",
+                        backgroundColor: form.recurrence === opt.value ? primary : "white",
+                      }}
+                    >
+                      {form.recurrence === opt.value && (
+                        <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-sm font-medium text-gray-800">{opt.label}</span>
+                    <p className="text-xs text-gray-400 mt-0.5">{opt.helper}</p>
+                  </div>
+                </label>
+              ))}
             </div>
           </div>
 

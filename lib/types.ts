@@ -48,8 +48,10 @@ export interface EventFormData {
   location_id: number | null;
   price: string;
   is_free: boolean;
+  all_day: boolean;
   start_date: string;
   end_date: string;
+  recurrence: string; // "" | "daily" | "weekly"
   tags: string[];
   categories: string[];
   image_urls: string[];
