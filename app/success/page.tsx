@@ -8,6 +8,7 @@ import { TenantBranding } from "@/lib/types";
 function SuccessContent() {
   const searchParams = useSearchParams();
   const customerUuid = searchParams.get("customer");
+  const fromStripe = searchParams.get("from") === "stripe";
   const cached = customerUuid ? getCachedBranding(customerUuid) : null;
   const [branding, setBranding] = useState<TenantBranding | null>(cached);
   const [ready, setReady] = useState(!!cached);
@@ -58,15 +59,18 @@ function SuccessContent() {
           Thanks for submitting your event
           {branding?.brand_name ? ` to ${branding.brand_name}` : ""}. We'll review it and get it listed soon.
         </p>
-        <p className="text-sm text-gray-400">You can close this tab.</p>
 
-        <a
-          href={`/embed?customer=${customerUuid}`}
-          className="inline-block mt-4 px-6 py-2 rounded-lg text-white text-sm font-medium"
-          style={{ backgroundColor: primary }}
-        >
-          Submit another event
-        </a>
+        {fromStripe ? (
+          <p className="text-sm text-gray-400">Payment processed. You may now close this tab.</p>
+        ) : (
+          <a
+            href={`/embed?customer=${customerUuid}`}
+            className="inline-block mt-4 px-6 py-2 rounded-lg text-white text-sm font-medium"
+            style={{ backgroundColor: primary }}
+          >
+            Submit another event
+          </a>
+        )}
       </div>
     </div>
   );
