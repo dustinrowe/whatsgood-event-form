@@ -216,6 +216,38 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
             <FieldError msg={errors.description} />
           </div>
 
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <Label>Ticket Price</Label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className={`${inputCls()} pl-8`}
+                  style={focusRingStyle}
+                  placeholder="0.00"
+                  value={form.price}
+                  onChange={e => set("price", e.target.value)}
+                  disabled={form.is_free}
+                />
+              </div>
+            </div>
+            <div className="pt-6">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <div
+                  onClick={() => { set("is_free", !form.is_free); if (!form.is_free) set("price", ""); }}
+                  className="w-10 h-6 rounded-full transition-colors relative cursor-pointer flex-shrink-0"
+                  style={{ backgroundColor: form.is_free ? primary : "#d1d5db" }}
+                >
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.is_free ? "translate-x-5" : "translate-x-1"}`} />
+                </div>
+                <span className="text-sm text-gray-700 font-medium">Free event</span>
+              </label>
+            </div>
+          </div>
+
           <div data-error={!!errors.tags}>
             <Label required>Tags</Label>
             <SearchableSelect
@@ -355,43 +387,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
           )}
         </Section>
 
-        {/* Section 4: Pricing */}
-        <Section>
-          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Pricing</h2>
-          <div className="flex items-center gap-4">
-            <div className="flex-1">
-              <Label>Ticket Price</Label>
-              <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">$</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  className={`${inputCls()} pl-8`}
-                  style={focusRingStyle}
-                  placeholder="0.00"
-                  value={form.price}
-                  onChange={e => set("price", e.target.value)}
-                  disabled={form.is_free}
-                />
-              </div>
-            </div>
-            <div className="pt-6">
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <div
-                  onClick={() => { set("is_free", !form.is_free); if (!form.is_free) set("price", ""); }}
-                  className="w-10 h-6 rounded-full transition-colors relative cursor-pointer flex-shrink-0"
-                  style={{ backgroundColor: form.is_free ? primary : "#d1d5db" }}
-                >
-                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.is_free ? "translate-x-5" : "translate-x-1"}`} />
-                </div>
-                <span className="text-sm text-gray-700 font-medium">Free event</span>
-              </label>
-            </div>
-          </div>
-        </Section>
-
-        {/* Section 5: Contact & Links */}
+        {/* Section 4: Contact & Links */}
         <Section>
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Your Info</h2>
 
