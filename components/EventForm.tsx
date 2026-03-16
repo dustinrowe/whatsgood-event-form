@@ -66,7 +66,7 @@ function Section({ children }: { children: React.ReactNode }) {
 }
 
 export default function EventForm({ customerUuid, config, onSuccess }: Props) {
-  const { branding, venues, tags, locations } = config;
+  const { branding, venues, tags, locations, promotion_tiers } = config;
   const primary = branding.primary_color || "#3B82F6";
 
   const [form, setForm] = useState<EventFormData>(initialForm);
@@ -138,7 +138,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
     setLoading(true);
     setError(null);
     try {
-      if (tier === "basic") {
+      if (!tier.stripe_price_id) {
         await submitBasicEvent(customerUuid, form);
         setShowPromo(false);
         onSuccess();
@@ -146,7 +146,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
         // Open blank window synchronously (inside user gesture) to avoid popup blockers,
         // then navigate it to the Stripe URL once we have it.
         const stripeWindow = window.open("", "_blank");
-        const { checkout_url } = await createFeaturedCheckout(customerUuid, form);
+        const { checkout_url } = await createFeaturedCheckout(customerUuid, tier.id, form);
 
         if (stripeWindow) {
           stripeWindow.location.href = checkout_url;
@@ -532,6 +532,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
       {showPromo && (
         <PromotionModal
           branding={branding}
+          tiers={promotion_tiers}
           onSelect={handlePromoSelect}
           onClose={() => { if (!loading) setShowPromo(false); }}
           loading={loading}

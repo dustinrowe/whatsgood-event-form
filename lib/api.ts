@@ -64,6 +64,7 @@ export async function submitBasicEvent(
 
 export async function createFeaturedCheckout(
   customerUuid: string,
+  tierId: string,
   form: EventFormData
 ): Promise<{ checkout_url: string; event_id: number }> {
   const res = await fetch(`${API_BASE}/public/stripe/checkout`, {
@@ -71,6 +72,7 @@ export async function createFeaturedCheckout(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       customer_uuid: customerUuid,
+      tier_id: tierId,
       event: {
         customer_uuid: customerUuid,
         title: form.title,

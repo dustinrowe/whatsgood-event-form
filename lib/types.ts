@@ -35,6 +35,7 @@ export interface PublicConfig {
   categories: CategoryOption[];
   venues: VenueOption[];
   locations: LocationOption[];
+  promotion_tiers: PromotionTierConfig[];
 }
 
 export interface EventFormData {
@@ -57,4 +58,20 @@ export interface EventFormData {
   image_urls: string[];
 }
 
-export type PromotionTier = "basic" | "featured";
+export interface PromotionTierFeature {
+  emoji: string;
+  label: string;
+  description: string;
+}
+
+export interface PromotionTierConfig {
+  id: string;
+  label: string;
+  highlight: boolean;
+  stripe_price_id: string | null;
+  price_display: string | null;
+  cta: string;
+  features: PromotionTierFeature[];
+}
+
+export type PromotionTier = PromotionTierConfig;
