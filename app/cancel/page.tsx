@@ -14,10 +14,8 @@ function CancelContent() {
 
   useEffect(() => {
     if (customerUuid) {
-      // Notify the form tab that payment was cancelled
-      const ch = new BroadcastChannel(`wg_payment_${customerUuid}`);
-      ch.postMessage({ type: "payment_cancelled" });
-      ch.close();
+      // Notify the form tab (window.opener) that payment was cancelled.
+      window.opener?.postMessage({ type: "payment_cancelled" }, window.location.origin);
 
       fetchConfig(customerUuid)
         .then((cfg) => setBranding(cfg.branding))

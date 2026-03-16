@@ -14,10 +14,9 @@ function SuccessContent() {
 
   useEffect(() => {
     if (customerUuid) {
-      // Notify the form tab that payment succeeded
-      const ch = new BroadcastChannel(`wg_payment_${customerUuid}`);
-      ch.postMessage({ type: "payment_success" });
-      ch.close();
+      // Notify the form tab (window.opener) that payment succeeded.
+      // postMessage works across iframe partitions; BroadcastChannel does not.
+      window.opener?.postMessage({ type: "payment_success" }, window.location.origin);
 
       fetchConfig(customerUuid)
         .then((cfg) => { setBranding(cfg.branding); setReady(true); })

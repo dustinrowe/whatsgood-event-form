@@ -73,11 +73,24 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
   const [waitingForPayment, setWaitingForPayment] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const channelRef = useRef<BroadcastChannel | null>(null);
+  const waitingRef = useRef(false);
 
   useEffect(() => {
-    return () => { channelRef.current?.close(); };
-  }, []);
+    function handleMessage(e: MessageEvent) {
+      if (e.origin !== window.location.origin) return;
+      if (!waitingRef.current) return;
+      if (e.data?.type === "payment_success") {
+        waitingRef.current = false;
+        onSuccess();
+      } else if (e.data?.type === "payment_cancelled") {
+        waitingRef.current = false;
+        setWaitingForPayment(false);
+        setShowPromo(true);
+      }
+    }
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [onSuccess]);
 
   useEffect(() => {
     document.documentElement.style.setProperty("--brand-primary", primary);
@@ -131,20 +144,6 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
         const stripeWindow = window.open("", "_blank");
         const { checkout_url } = await createFeaturedCheckout(customerUuid, form);
 
-        // Set up BroadcastChannel to detect payment outcome in the new tab
-        const ch = new BroadcastChannel(`wg_payment_${customerUuid}`);
-        channelRef.current = ch;
-        ch.onmessage = (e) => {
-          ch.close();
-          channelRef.current = null;
-          if (e.data?.type === "payment_success") {
-            onSuccess();
-          } else if (e.data?.type === "payment_cancelled") {
-            setWaitingForPayment(false);
-            setShowPromo(true);
-          }
-        };
-
         if (stripeWindow) {
           stripeWindow.location.href = checkout_url;
         } else {
@@ -152,6 +151,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
           (window.top ?? window).location.href = checkout_url;
         }
 
+        waitingRef.current = true;
         setLoading(false);
         setShowPromo(false);
         setWaitingForPayment(true);
@@ -419,7 +419,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
             </div>
             <button
               type="button"
-              onClick={() => { channelRef.current?.close(); channelRef.current = null; setWaitingForPayment(false); setShowPromo(true); }}
+              onClick={() => { waitingRef.current = false; setWaitingForPayment(false); setShowPromo(true); }}
               className="text-sm text-gray-400 hover:text-gray-600 underline"
             >
               Back to options
