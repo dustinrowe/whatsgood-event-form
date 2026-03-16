@@ -121,7 +121,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
         onSuccess();
       } else {
         const { checkout_url } = await createFeaturedCheckout(customerUuid, form);
-        window.location.href = checkout_url;
+        (window.top ?? window).location.href = checkout_url;
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
