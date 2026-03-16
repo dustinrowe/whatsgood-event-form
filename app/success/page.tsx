@@ -8,17 +8,27 @@ import { TenantBranding } from "@/lib/types";
 function SuccessContent() {
   const searchParams = useSearchParams();
   const customerUuid = searchParams.get("customer");
-  const [branding, setBranding] = useState<TenantBranding | null>(
-    () => (customerUuid ? getCachedBranding(customerUuid) : null)
-  );
+  const cached = customerUuid ? getCachedBranding(customerUuid) : null;
+  const [branding, setBranding] = useState<TenantBranding | null>(cached);
+  const [ready, setReady] = useState(!!cached);
 
   useEffect(() => {
     if (customerUuid) {
       fetchConfig(customerUuid)
-        .then((cfg) => setBranding(cfg.branding))
-        .catch(() => null);
+        .then((cfg) => { setBranding(cfg.branding); setReady(true); })
+        .catch(() => setReady(true));
+    } else {
+      setReady(true);
     }
   }, [customerUuid]);
+
+  if (!ready) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-gray-200 border-t-gray-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   const primary = branding?.primary_color || "#3B82F6";
 
