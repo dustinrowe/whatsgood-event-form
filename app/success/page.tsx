@@ -11,26 +11,40 @@ function SuccessContent() {
   const fromStripe = searchParams.get("from") === "stripe";
   const cached = customerUuid ? getCachedBranding(customerUuid) : null;
   const [branding, setBranding] = useState<TenantBranding | null>(cached);
-  const [ready, setReady] = useState(!!cached);
+  const [ready, setReady] = useState(fromStripe || !!cached);
 
   useEffect(() => {
-    if (customerUuid) {
-      // Notify the form tab (window.opener) that payment succeeded.
-      // postMessage works across iframe partitions; BroadcastChannel does not.
-      window.opener?.postMessage({ type: "payment_success" }, window.location.origin);
-
-      fetchConfig(customerUuid)
-        .then((cfg) => { setBranding(cfg.branding); setReady(true); })
-        .catch(() => setReady(true));
-    } else {
-      setReady(true);
-    }
-  }, [customerUuid]);
+    if (!customerUuid) { setReady(true); return; }
+    // Notify the form tab that payment succeeded
+    window.opener?.postMessage({ type: "payment_success" }, window.location.origin);
+    // Generic Stripe tab — no branding needed
+    if (fromStripe) return;
+    fetchConfig(customerUuid)
+      .then((cfg) => { setBranding(cfg.branding); setReady(true); })
+      .catch(() => setReady(true));
+  }, [customerUuid, fromStripe]);
 
   if (!ready) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-gray-200 border-t-gray-500 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (fromStripe) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white p-8">
+        <div className="text-center max-w-md space-y-4">
+          <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto">
+            <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900">Event Submitted!</h1>
+          <p className="text-gray-500">Your payment was processed and your event is pending review.</p>
+          <p className="text-sm text-gray-400">You may now close this tab.</p>
+        </div>
       </div>
     );
   }
@@ -60,17 +74,13 @@ function SuccessContent() {
           {branding?.brand_name ? ` to ${branding.brand_name}` : ""}. We'll review it and get it listed soon.
         </p>
 
-        {fromStripe ? (
-          <p className="text-sm text-gray-400">Payment processed. You may now close this tab.</p>
-        ) : (
-          <a
-            href={`/embed?customer=${customerUuid}`}
-            className="inline-block mt-4 px-6 py-2 rounded-lg text-white text-sm font-medium"
-            style={{ backgroundColor: primary }}
-          >
-            Submit another event
-          </a>
-        )}
+        <a
+          href={`/embed?customer=${customerUuid}`}
+          className="inline-block mt-4 px-6 py-2 rounded-lg text-white text-sm font-medium"
+          style={{ backgroundColor: primary }}
+        >
+          Submit another event
+        </a>
       </div>
     </div>
   );
