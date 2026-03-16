@@ -1,0 +1,389 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { PublicConfig, EventFormData, PromotionTier } from "@/lib/types";
+import { submitBasicEvent, createFeaturedCheckout } from "@/lib/api";
+import PromotionModal from "./PromotionModal";
+import ImageUploader from "./ImageUploader";
+import SearchableSelect from "./SearchableSelect";
+import DateTimePicker from "./DateTimePicker";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://whatsgoodapi.up.railway.app";
+
+interface Props {
+  customerUuid: string;
+  config: PublicConfig;
+  onSuccess: () => void;
+}
+
+const initialForm: EventFormData = {
+  title: "",
+  description: "",
+  submitter_email: "",
+  website_url: "",
+  address: "",
+  venue_id: null,
+  venue_name: "",
+  location_id: null,
+  price: "",
+  is_free: false,
+  start_date: "",
+  end_date: "",
+  tags: [],
+  categories: [],
+  image_urls: [],
+};
+
+// Shared input styles — Typeform-inspired: clean border, smooth focus ring
+function inputCls(hasError?: boolean) {
+  return `w-full bg-white border rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 transition-all focus:outline-none focus:ring-2 focus:ring-offset-0 ${
+    hasError ? "border-red-400" : "border-gray-200 focus:border-transparent"
+  }`;
+}
+
+function Label({ children, required }: { children: React.ReactNode; required?: boolean }) {
+  return (
+    <label className="block text-sm font-semibold text-gray-800 mb-1.5">
+      {children}
+      {required && <span className="text-red-400 ml-1">*</span>}
+    </label>
+  );
+}
+
+function FieldError({ msg }: { msg?: string }) {
+  if (!msg) return null;
+  return <p className="mt-1 text-xs text-red-500">{msg}</p>;
+}
+
+function Section({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
+      {children}
+    </div>
+  );
+}
+
+export default function EventForm({ customerUuid, config, onSuccess }: Props) {
+  const { branding, venues, tags, locations } = config;
+  const primary = branding.primary_color || "#3B82F6";
+
+  const [form, setForm] = useState<EventFormData>(initialForm);
+  const [showPromo, setShowPromo] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    document.documentElement.style.setProperty("--brand-primary", primary);
+  }, [primary]);
+
+  function set(field: keyof EventFormData, value: unknown) {
+    setForm(f => ({ ...f, [field]: value }));
+    setErrors(e => { const n = { ...e }; delete n[field]; return n; });
+  }
+
+  function validate(): boolean {
+    const e: Record<string, string> = {};
+    if (!form.title.trim()) e.title = "Required";
+    if (!form.description.trim()) e.description = "Required";
+    if (!form.submitter_email.trim()) e.submitter_email = "Required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.submitter_email)) e.submitter_email = "Invalid email";
+    if (!form.website_url.trim()) e.website_url = "Required";
+    if (!form.venue_id) {
+      if (!form.address.trim()) e.address = "Required";
+      if (!form.location_id) e.location_id = "Required";
+    }
+    if (!form.start_date) e.start_date = "Required";
+    if (!form.end_date) e.end_date = "Required";
+    if (form.tags.length === 0) e.tags = "Select at least one tag";
+    if (form.image_urls.length === 0) e.image_urls = "At least one image is required";
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  }
+
+  function handleSubmitClick() {
+    if (!validate()) {
+      // Scroll to first error
+      const firstError = document.querySelector("[data-error='true']");
+      firstError?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    setShowPromo(true);
+  }
+
+  async function handlePromoSelect(tier: PromotionTier) {
+    setLoading(true);
+    setError(null);
+    try {
+      if (tier === "basic") {
+        await submitBasicEvent(customerUuid, form);
+        setShowPromo(false);
+        onSuccess();
+      } else {
+        const { checkout_url } = await createFeaturedCheckout(customerUuid, form);
+        window.location.href = checkout_url;
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+      setLoading(false);
+    }
+  }
+
+  const focusRingStyle = { "--tw-ring-color": `${primary}40` } as React.CSSProperties;
+
+  // Light tint of the brand color for the page background
+  const pageBg = `color-mix(in srgb, ${primary} 8%, white)`;
+
+  return (
+    <div className="min-h-screen" style={{ backgroundColor: pageBg }}>
+      <div className="max-w-2xl mx-auto px-4 py-8 space-y-4">
+
+        {/* Logo / brand — sits above the white form area, no separate header bar */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 py-8 flex flex-col items-center gap-3">
+          {branding.logo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={branding.logo_url} alt={branding.brand_name} className="h-16 object-contain" />
+          ) : (
+            <span className="text-2xl font-bold" style={{ color: primary }}>{branding.brand_name}</span>
+          )}
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-gray-900">Submit Your Event</h1>
+            <p className="text-gray-500 text-sm mt-1">Fill out the form below to get your event listed{branding.city ? ` in ${branding.city}` : ""}.</p>
+          </div>
+        </div>
+
+        {/* Section 1: Event Details */}
+        <Section>
+          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Event Details</h2>
+
+          <div data-error={!!errors.title}>
+            <Label required>Event Title</Label>
+            <input
+              type="text"
+              className={inputCls(!!errors.title)}
+              style={focusRingStyle}
+              placeholder="e.g. Summer Jazz Night"
+              value={form.title}
+              onChange={e => set("title", e.target.value)}
+            />
+            <FieldError msg={errors.title} />
+          </div>
+
+          <div data-error={!!errors.description}>
+            <Label required>Description</Label>
+            <textarea
+              className={`${inputCls(!!errors.description)} min-h-[120px] resize-y`}
+              style={focusRingStyle}
+              placeholder="Tell people what to expect at your event..."
+              value={form.description}
+              onChange={e => set("description", e.target.value)}
+            />
+            <FieldError msg={errors.description} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div data-error={!!errors.start_date}>
+              <Label required>Start Date & Time</Label>
+              <DateTimePicker
+                value={form.start_date}
+                onChange={v => set("start_date", v)}
+                placeholder="Select start"
+                hasError={!!errors.start_date}
+                primaryColor={primary}
+                minDate={new Date().toISOString().slice(0, 10)}
+              />
+              <FieldError msg={errors.start_date} />
+            </div>
+            <div data-error={!!errors.end_date}>
+              <Label required>End Date & Time</Label>
+              <DateTimePicker
+                value={form.end_date}
+                onChange={v => set("end_date", v)}
+                placeholder="Select end"
+                hasError={!!errors.end_date}
+                primaryColor={primary}
+                minDate={form.start_date ? form.start_date.slice(0, 10) : new Date().toISOString().slice(0, 10)}
+              />
+              <FieldError msg={errors.end_date} />
+            </div>
+          </div>
+
+          <div data-error={!!errors.tags}>
+            <Label required>Tags</Label>
+            <SearchableSelect
+              mode="multi"
+              options={tags}
+              selected={form.tags}
+              onChange={v => set("tags", v)}
+              placeholder="Search tags..."
+              primaryColor={primary}
+              hasError={!!errors.tags}
+            />
+            <FieldError msg={errors.tags} />
+          </div>
+        </Section>
+
+        {/* Section 2: Location */}
+        <Section>
+          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Location</h2>
+
+          <div>
+            <Label>Venue</Label>
+            <p className="text-xs text-gray-400 mb-1.5">Can't find yours? Leave blank and fill in the address below.</p>
+            <SearchableSelect
+              mode="single"
+              options={venues}
+              value={form.venue_id}
+              onSelect={(id, name) => { set("venue_id", id); set("venue_name", name); }}
+              placeholder="Search venues..."
+              primaryColor={primary}
+            />
+          </div>
+
+          {!form.venue_id && (
+            <>
+              <div data-error={!!errors.location_id}>
+                <Label required>Location / Area</Label>
+                <SearchableSelect
+                  mode="single"
+                  options={locations}
+                  value={form.location_id}
+                  onSelect={(id) => set("location_id", id)}
+                  placeholder="Search locations..."
+                  primaryColor={primary}
+                  hasError={!!errors.location_id}
+                />
+                <FieldError msg={errors.location_id} />
+              </div>
+
+              <div data-error={!!errors.address}>
+                <Label required>Address</Label>
+                <input
+                  type="text"
+                  className={inputCls(!!errors.address)}
+                  style={focusRingStyle}
+                  placeholder="123 Main St, City, State"
+                  value={form.address}
+                  onChange={e => set("address", e.target.value)}
+                />
+                <FieldError msg={errors.address} />
+              </div>
+            </>
+          )}
+        </Section>
+
+        {/* Section 3: Pricing */}
+        <Section>
+          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Pricing</h2>
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <Label>Ticket Price</Label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">$</span>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className={`${inputCls()} pl-8`}
+                  style={focusRingStyle}
+                  placeholder="0.00"
+                  value={form.price}
+                  onChange={e => set("price", e.target.value)}
+                  disabled={form.is_free}
+                />
+              </div>
+            </div>
+            <div className="pt-6">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <div
+                  onClick={() => { set("is_free", !form.is_free); if (!form.is_free) set("price", ""); }}
+                  className="w-10 h-6 rounded-full transition-colors relative cursor-pointer flex-shrink-0"
+                  style={{ backgroundColor: form.is_free ? primary : "#d1d5db" }}
+                >
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.is_free ? "translate-x-5" : "translate-x-1"}`} />
+                </div>
+                <span className="text-sm text-gray-700 font-medium">Free event</span>
+              </label>
+            </div>
+          </div>
+        </Section>
+
+        {/* Section 4: Contact & Links */}
+        <Section>
+          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Your Info</h2>
+
+          <div data-error={!!errors.submitter_email}>
+            <Label required>Your Email</Label>
+            <input
+              type="email"
+              className={inputCls(!!errors.submitter_email)}
+              style={focusRingStyle}
+              placeholder="you@example.com"
+              value={form.submitter_email}
+              onChange={e => set("submitter_email", e.target.value)}
+            />
+            <FieldError msg={errors.submitter_email} />
+          </div>
+
+          <div data-error={!!errors.website_url}>
+            <Label required>Website / Tickets Link</Label>
+            <input
+              type="url"
+              className={inputCls(!!errors.website_url)}
+              style={focusRingStyle}
+              placeholder="https://..."
+              value={form.website_url}
+              onChange={e => set("website_url", e.target.value)}
+            />
+            <FieldError msg={errors.website_url} />
+          </div>
+        </Section>
+
+        {/* Section 5: Images */}
+        <Section>
+          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Images</h2>
+          <div data-error={!!errors.image_urls}>
+            <Label required>Event Photo</Label>
+            <p className="text-xs text-gray-400 mb-2">High quality image recommended. Preferred: 3×4 vertical.</p>
+            <ImageUploader
+              images={form.image_urls}
+              onChange={urls => set("image_urls", urls)}
+              apiBase={API_BASE}
+            />
+            <FieldError msg={errors.image_urls} />
+          </div>
+        </Section>
+
+        {/* Error */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
+            {error}
+          </div>
+        )}
+
+        {/* Submit */}
+        <button
+          type="button"
+          onClick={handleSubmitClick}
+          className="w-full py-4 rounded-xl text-white font-semibold text-base shadow-sm transition-all hover:opacity-90 active:scale-[0.99]"
+          style={{ backgroundColor: primary }}
+        >
+          Continue
+        </button>
+
+        <p className="text-center text-xs text-gray-400 pb-6">
+          You'll choose a listing option on the next step.
+        </p>
+      </div>
+
+      {showPromo && (
+        <PromotionModal
+          branding={branding}
+          onSelect={handlePromoSelect}
+          onClose={() => { if (!loading) setShowPromo(false); }}
+          loading={loading}
+        />
+      )}
+    </div>
+  );
+}

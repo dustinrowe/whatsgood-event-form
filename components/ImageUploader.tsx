@@ -1,0 +1,128 @@
+"use client";
+
+import { useRef, useState } from "react";
+
+interface Props {
+  images: string[];
+  onChange: (urls: string[]) => void;
+  apiBase: string;
+}
+
+async function uploadFile(file: File, apiBase: string): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch(`${apiBase}/public/upload-image`, { method: "POST", body: formData });
+  if (!res.ok) throw new Error("Upload failed");
+  const data = await res.json();
+  return data.url;
+}
+
+export default function ImageUploader({ images, onChange, apiBase }: Props) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadCount, setUploadCount] = useState(0);
+  const [doneCount, setDoneCount] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleFiles(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    setError(null);
+    setUploadCount(files.length);
+    setDoneCount(0);
+
+    const results = await Promise.allSettled(
+      Array.from(files).map(file =>
+        uploadFile(file, apiBase).then(url => {
+          setDoneCount(n => n + 1);
+          return url;
+        })
+      )
+    );
+
+    const uploaded = results
+      .filter((r): r is PromiseFulfilledResult<string> => r.status === "fulfilled")
+      .map(r => r.value);
+
+    const failed = results.filter(r => r.status === "rejected").length;
+
+    if (failed > 0) setError(`${failed} image${failed > 1 ? "s" : ""} failed to upload.`);
+    if (uploaded.length > 0) onChange([...images, ...uploaded]);
+
+    setUploading(false);
+    setUploadCount(0);
+    setDoneCount(0);
+    // Reset input so the same files can be re-selected if needed
+    if (inputRef.current) inputRef.current.value = "";
+  }
+
+  function removeImage(url: string) {
+    onChange(images.filter(u => u !== url));
+  }
+
+  return (
+    <div className="space-y-3">
+      <div
+        className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center cursor-pointer hover:border-gray-300 transition-colors"
+        onClick={() => inputRef.current?.click()}
+        onDragOver={e => e.preventDefault()}
+        onDrop={e => { e.preventDefault(); handleFiles(e.dataTransfer.files); }}
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          multiple
+          className="hidden"
+          onChange={e => handleFiles(e.target.files)}
+        />
+        {uploading ? (
+          <div className="flex flex-col items-center gap-3">
+            <div className="relative w-10 h-10">
+              <svg className="w-10 h-10 -rotate-90" viewBox="0 0 36 36">
+                <circle cx="18" cy="18" r="15" fill="none" stroke="#e5e7eb" strokeWidth="3" />
+                <circle
+                  cx="18" cy="18" r="15" fill="none" stroke="#6b7280" strokeWidth="3"
+                  strokeDasharray={`${Math.round((doneCount / uploadCount) * 94)} 94`}
+                  strokeLinecap="round"
+                  style={{ transition: "stroke-dasharray 0.3s ease" }}
+                />
+              </svg>
+              <span className="absolute inset-0 flex items-center justify-center text-xs font-medium text-gray-600">
+                {doneCount}/{uploadCount}
+              </span>
+            </div>
+            <span className="text-sm text-gray-500">Uploading images...</span>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center gap-2 text-gray-400">
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span className="text-sm">Click or drag to upload — select multiple at once</span>
+            <span className="text-xs">Preferred: 3×4 vertical</span>
+          </div>
+        )}
+      </div>
+
+      {error && <p className="text-red-500 text-xs">{error}</p>}
+
+      {images.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {images.map(url => (
+            <div key={url} className="relative group w-24 h-24">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={url} alt="Event" className="w-full h-full object-cover rounded-lg" />
+              <button
+                type="button"
+                onClick={() => removeImage(url)}
+                className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+              >×</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
