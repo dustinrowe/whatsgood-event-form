@@ -216,6 +216,25 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
             <FieldError msg={errors.description} />
           </div>
 
+          <div data-error={!!errors.tags}>
+            <Label required>Tags</Label>
+            <SearchableSelect
+              mode="multi"
+              options={tags}
+              selected={form.tags}
+              onChange={v => set("tags", v)}
+              placeholder="Search tags..."
+              primaryColor={primary}
+              hasError={!!errors.tags}
+            />
+            <FieldError msg={errors.tags} />
+          </div>
+        </Section>
+
+        {/* Section 2: Date & Time */}
+        <Section>
+          <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Date &amp; Time</h2>
+
           {/* All day toggle */}
           <div className="flex items-center gap-2">
             <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -223,7 +242,6 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
                 onClick={() => {
                   const next = !form.all_day;
                   set("all_day", next);
-                  // Strip time from existing dates when enabling
                   if (next) {
                     if (form.start_date) set("start_date", form.start_date.slice(0, 10) + "T00:00");
                     if (form.end_date) set("end_date", form.end_date.slice(0, 10) + "T00:00");
@@ -286,23 +304,9 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
               </svg>
             </div>
           </div>
-
-          <div data-error={!!errors.tags}>
-            <Label required>Tags</Label>
-            <SearchableSelect
-              mode="multi"
-              options={tags}
-              selected={form.tags}
-              onChange={v => set("tags", v)}
-              placeholder="Search tags..."
-              primaryColor={primary}
-              hasError={!!errors.tags}
-            />
-            <FieldError msg={errors.tags} />
-          </div>
         </Section>
 
-        {/* Section 2: Location */}
+        {/* Section 3: Location */}
         <Section>
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Location</h2>
 
@@ -351,7 +355,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
           )}
         </Section>
 
-        {/* Section 3: Pricing */}
+        {/* Section 4: Pricing */}
         <Section>
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Pricing</h2>
           <div className="flex items-center gap-4">
@@ -387,7 +391,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
           </div>
         </Section>
 
-        {/* Section 4: Contact & Links */}
+        {/* Section 5: Contact & Links */}
         <Section>
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Your Info</h2>
 
@@ -418,7 +422,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
           </div>
         </Section>
 
-        {/* Section 5: Images */}
+        {/* Section 6: Images */}
         <Section>
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Images</h2>
           <div data-error={!!errors.image_urls}>
