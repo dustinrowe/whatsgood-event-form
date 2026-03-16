@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { PublicConfig, EventFormData, PromotionTier } from "@/lib/types";
 import { submitBasicEvent, createFeaturedCheckout } from "@/lib/api";
 import PromotionModal from "./PromotionModal";
@@ -70,8 +70,14 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
   const [form, setForm] = useState<EventFormData>(initialForm);
   const [showPromo, setShowPromo] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [waitingForPayment, setWaitingForPayment] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const channelRef = useRef<BroadcastChannel | null>(null);
+
+  useEffect(() => {
+    return () => { channelRef.current?.close(); };
+  }, []);
 
   useEffect(() => {
     document.documentElement.style.setProperty("--brand-primary", primary);
@@ -120,16 +126,35 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
         setShowPromo(false);
         onSuccess();
       } else {
-        // Open blank window now (synchronous, inside user gesture) to avoid popup blockers,
+        // Open blank window synchronously (inside user gesture) to avoid popup blockers,
         // then navigate it to the Stripe URL once we have it.
         const stripeWindow = window.open("", "_blank");
         const { checkout_url } = await createFeaturedCheckout(customerUuid, form);
+
+        // Set up BroadcastChannel to detect payment outcome in the new tab
+        const ch = new BroadcastChannel(`wg_payment_${customerUuid}`);
+        channelRef.current = ch;
+        ch.onmessage = (e) => {
+          ch.close();
+          channelRef.current = null;
+          if (e.data?.type === "payment_success") {
+            onSuccess();
+          } else if (e.data?.type === "payment_cancelled") {
+            setWaitingForPayment(false);
+            setShowPromo(true);
+          }
+        };
+
         if (stripeWindow) {
           stripeWindow.location.href = checkout_url;
         } else {
           // Fallback if popup was blocked
           (window.top ?? window).location.href = checkout_url;
         }
+
+        setLoading(false);
+        setShowPromo(false);
+        setWaitingForPayment(true);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -383,6 +408,25 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
           You'll choose a listing option on the next step.
         </p>
       </div>
+
+      {waitingForPayment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: pageBg }}>
+          <div className="bg-white rounded-2xl shadow-xl p-10 flex flex-col items-center gap-5 max-w-sm w-full text-center">
+            <div className="w-10 h-10 border-2 border-gray-200 rounded-full" style={{ borderTopColor: primary, animation: "spin 0.9s linear infinite" }} />
+            <div>
+              <p className="text-lg font-semibold text-gray-900">Complete your payment</p>
+              <p className="text-sm text-gray-500 mt-1">Finish checkout in the other tab — this screen will update automatically.</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => { channelRef.current?.close(); channelRef.current = null; setWaitingForPayment(false); setShowPromo(true); }}
+              className="text-sm text-gray-400 hover:text-gray-600 underline"
+            >
+              Back to options
+            </button>
+          </div>
+        </div>
+      )}
 
       {showPromo && (
         <PromotionModal

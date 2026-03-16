@@ -14,6 +14,11 @@ function SuccessContent() {
 
   useEffect(() => {
     if (customerUuid) {
+      // Notify the form tab that payment succeeded
+      const ch = new BroadcastChannel(`wg_payment_${customerUuid}`);
+      ch.postMessage({ type: "payment_success" });
+      ch.close();
+
       fetchConfig(customerUuid)
         .then((cfg) => { setBranding(cfg.branding); setReady(true); })
         .catch(() => setReady(true));
@@ -54,6 +59,7 @@ function SuccessContent() {
           Thanks for submitting your event
           {branding?.brand_name ? ` to ${branding.brand_name}` : ""}. We'll review it and get it listed soon.
         </p>
+        <p className="text-sm text-gray-400">You can close this tab.</p>
 
         <a
           href={`/embed?customer=${customerUuid}`}
