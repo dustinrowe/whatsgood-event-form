@@ -120,8 +120,16 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
         setShowPromo(false);
         onSuccess();
       } else {
+        // Open blank window now (synchronous, inside user gesture) to avoid popup blockers,
+        // then navigate it to the Stripe URL once we have it.
+        const stripeWindow = window.open("", "_blank");
         const { checkout_url } = await createFeaturedCheckout(customerUuid, form);
-        (window.top ?? window).location.href = checkout_url;
+        if (stripeWindow) {
+          stripeWindow.location.href = checkout_url;
+        } else {
+          // Fallback if popup was blocked
+          (window.top ?? window).location.href = checkout_url;
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
