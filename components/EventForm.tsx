@@ -270,32 +270,20 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
           {/* Recurring event */}
           <div>
             <Label>Recurring Event</Label>
-            <div className="space-y-2 mt-1">
-              {[
-                { value: "daily", label: "Daily", helper: "The event occurs multiple days in a row such as Friday, Saturday, Sunday." },
-                { value: "weekly", label: "Weekly", helper: "The event happens at the same time every week." },
-              ].map(opt => (
-                <label key={opt.value} className="flex items-start gap-3 cursor-pointer group">
-                  <div className="mt-0.5 flex-shrink-0">
-                    <div
-                      onClick={() => set("recurrence", form.recurrence === opt.value ? "" : opt.value)}
-                      className="w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors"
-                      style={{
-                        borderColor: form.recurrence === opt.value ? primary : "#d1d5db",
-                        backgroundColor: form.recurrence === opt.value ? primary : "white",
-                      }}
-                    >
-                      {form.recurrence === opt.value && (
-                        <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                      )}
-                    </div>
-                  </div>
-                  <div>
-                    <span className="text-sm font-medium text-gray-800">{opt.label}</span>
-                    <p className="text-xs text-gray-400 mt-0.5">{opt.helper}</p>
-                  </div>
-                </label>
-              ))}
+            <div className="relative mt-1">
+              <select
+                className={`${inputCls()} appearance-none pr-10`}
+                style={focusRingStyle}
+                value={form.recurrence}
+                onChange={e => set("recurrence", e.target.value)}
+              >
+                <option value="">Single Occurrence</option>
+                <option value="daily">Daily — occurs multiple days in a row (e.g. Fri, Sat, Sun)</option>
+                <option value="weekly">Weekly — happens at the same time every week</option>
+              </select>
+              <svg className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
             </div>
           </div>
 
