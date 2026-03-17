@@ -24,8 +24,11 @@ export default function PromotionModal({ branding, tiers, onSelect, onClose, loa
 
         {/* Cards */}
         <div
-          className="px-6 pb-6 grid gap-4"
-          style={{ gridTemplateColumns: `repeat(${tiers.length}, minmax(0, 1fr))` }}
+          className={
+            tiers.length >= 3
+              ? "px-6 pb-6 flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory"
+              : "px-6 pb-6 grid grid-cols-2 gap-4"
+          }
         >
           {tiers.map(tier => (
             <TierCard
@@ -34,6 +37,7 @@ export default function PromotionModal({ branding, tiers, onSelect, onClose, loa
               primary={primary}
               loading={loading}
               onSelect={onSelect}
+              scrollable={tiers.length >= 3}
             />
           ))}
         </div>
@@ -58,17 +62,20 @@ function TierCard({
   primary,
   loading,
   onSelect,
+  scrollable,
 }: {
   tier: PromotionTierConfig;
   primary: string;
   loading: boolean;
   onSelect: (tier: PromotionTierConfig) => void;
+  scrollable: boolean;
 }) {
   const isPaid = !!tier.stripe_price_id;
+  const fixedWidth = scrollable ? "min-w-[260px] max-w-[260px] snap-start" : "";
 
   if (tier.highlight) {
     return (
-      <div className="rounded-xl border-2 overflow-hidden" style={{ borderColor: primary }}>
+      <div className={`rounded-xl border-2 overflow-hidden ${fixedWidth}`} style={{ borderColor: primary }}>
         <div
           className="text-white text-center py-2 font-semibold text-sm tracking-wide"
           style={{ backgroundColor: primary }}
@@ -106,7 +113,7 @@ function TierCard({
   }
 
   return (
-    <div className="rounded-xl border-2 border-gray-200 overflow-hidden">
+    <div className={`rounded-xl border-2 border-gray-200 overflow-hidden ${fixedWidth}`}>
       <div className="bg-gray-100 text-gray-700 text-center py-2 font-semibold text-sm tracking-wide">
         {tier.label}
       </div>
