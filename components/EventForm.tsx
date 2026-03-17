@@ -137,16 +137,19 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
   async function handlePromoSelect(tier: PromotionTier) {
     setLoading(true);
     setError(null);
+    const tagIds = form.tags
+      .map(name => tags.find(t => t.name === name)?.id)
+      .filter((id): id is number => id !== undefined);
     try {
       if (!tier.stripe_price_id) {
-        await submitBasicEvent(customerUuid, form);
+        await submitBasicEvent(customerUuid, form, tagIds);
         setShowPromo(false);
         onSuccess();
       } else {
         // Open blank window synchronously (inside user gesture) to avoid popup blockers,
         // then navigate it to the Stripe URL once we have it.
         const stripeWindow = window.open("", "_blank");
-        const { checkout_url } = await createFeaturedCheckout(customerUuid, tier.id, form);
+        const { checkout_url } = await createFeaturedCheckout(customerUuid, tier.id, form, tagIds);
 
         if (stripeWindow) {
           stripeWindow.location.href = checkout_url;

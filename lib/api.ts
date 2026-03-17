@@ -30,7 +30,8 @@ export async function fetchConfig(customerUuid: string): Promise<PublicConfig> {
 
 export async function submitBasicEvent(
   customerUuid: string,
-  form: EventFormData
+  form: EventFormData,
+  tagIds: number[]
 ): Promise<{ event_id: number }> {
   const res = await fetch(`${API_BASE}/public/events`, {
     method: "POST",
@@ -49,7 +50,7 @@ export async function submitBasicEvent(
       is_free: form.is_free,
       start_date: form.start_date || null,
       end_date: form.end_date || null,
-      tags: form.tags,
+      tags: tagIds,
       categories: form.categories,
       image_urls: form.image_urls,
       recurrence: form.recurrence || null,
@@ -65,7 +66,8 @@ export async function submitBasicEvent(
 export async function createFeaturedCheckout(
   customerUuid: string,
   tierId: string,
-  form: EventFormData
+  form: EventFormData,
+  tagIds: number[]
 ): Promise<{ checkout_url: string; event_id: number }> {
   const res = await fetch(`${API_BASE}/public/stripe/checkout`, {
     method: "POST",
@@ -87,7 +89,7 @@ export async function createFeaturedCheckout(
         is_free: form.is_free,
         start_date: form.start_date || null,
         end_date: form.end_date || null,
-        tags: form.tags,
+        tags: tagIds,
         categories: form.categories,
         image_urls: form.image_urls,
         recurrence: form.recurrence || null,
