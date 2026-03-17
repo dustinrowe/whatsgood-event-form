@@ -55,7 +55,7 @@ export default function PromotionModal({ branding, tiers, onSelect, onClose, loa
         {scrollable ? (
           <div
             ref={scrollRef}
-            className="flex gap-4 overflow-x-auto snap-x snap-mandatory px-5 pb-6 select-none"
+            className="flex gap-4 overflow-x-auto snap-x snap-mandatory pl-5 pb-6 select-none"
             style={{ cursor: "grab", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
             onMouseDown={onMouseDown}
             onMouseMove={onMouseMove}
@@ -73,11 +73,11 @@ export default function PromotionModal({ branding, tiers, onSelect, onClose, loa
                 getDragged={() => dragState.current.moved}
               />
             ))}
-            {/* Right padding sentinel */}
-            <div className="min-w-[1px]" />
+            {/* Right padding sentinel — matches pl-5 so padding is visible after last card */}
+            <div className="min-w-5 flex-shrink-0" />
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-4 px-5 pb-6">
+          <div className="grid grid-cols-2 gap-4 px-5 pb-5">
             {tiers.map(tier => (
               <TierCard
                 key={tier.id}
