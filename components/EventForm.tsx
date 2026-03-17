@@ -407,7 +407,12 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
               mode="single"
               options={venues}
               value={form.venue_id}
-              onSelect={(id, name) => { set("venue_id", id); set("venue_name", name); }}
+              onSelect={(id, name) => {
+                set("venue_id", id);
+                set("venue_name", name);
+                const venueAddress = venues.find(v => v.id === id)?.address ?? "";
+                set("address", venueAddress);
+              }}
               placeholder="Search venues..."
               primaryColor={primary}
             />
