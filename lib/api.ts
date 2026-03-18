@@ -4,6 +4,19 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://whatsgoodapi.u
 
 const BRANDING_CACHE_KEY = (uuid: string) => `wg_branding_${uuid}`;
 
+/** Retry a fetch on network failure (e.g. cold Railway server waking up). */
+async function fetchWithRetry(url: string, options?: RequestInit, retries = 2): Promise<Response> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fetch(url, options);
+    } catch (err) {
+      if (attempt === retries) throw err;
+      await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
+    }
+  }
+  throw new Error("Network error");
+}
+
 export function getCachedBranding(customerUuid: string) {
   try {
     const raw = sessionStorage.getItem(BRANDING_CACHE_KEY(customerUuid));
@@ -14,7 +27,7 @@ export function getCachedBranding(customerUuid: string) {
 }
 
 export async function fetchConfig(customerUuid: string): Promise<PublicConfig> {
-  const res = await fetch(`${API_BASE}/public/config/${customerUuid}`);
+  const res = await fetchWithRetry(`${API_BASE}/public/config/${customerUuid}`);
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.detail || "Failed to load form configuration");
@@ -33,7 +46,7 @@ export async function submitBasicEvent(
   form: EventFormData,
   tagIds: number[]
 ): Promise<{ event_id: number }> {
-  const res = await fetch(`${API_BASE}/public/events`, {
+  const res = await fetchWithRetry(`${API_BASE}/public/events`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -69,7 +82,7 @@ export async function createFeaturedCheckout(
   form: EventFormData,
   tagIds: number[]
 ): Promise<{ checkout_url: string; event_id: number }> {
-  const res = await fetch(`${API_BASE}/public/stripe/checkout`, {
+  const res = await fetchWithRetry(`${API_BASE}/public/stripe/checkout`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -107,7 +120,7 @@ export async function uploadImage(file: File): Promise<string> {
   const formData = new FormData();
   formData.append("file", file);
 
-  const res = await fetch(`${API_BASE}/public/upload-image`, {
+  const res = await fetchWithRetry(`${API_BASE}/public/upload-image`, {
     method: "POST",
     body: formData,
   });

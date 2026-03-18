@@ -164,7 +164,8 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
         setWaitingForPayment(true);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
+      console.error("Submission error:", err);
+      setError("Something went wrong. Please try refreshing your page.");
       setLoading(false);
     }
   }
@@ -183,7 +184,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
         body: JSON.stringify({ title: form.title, description: form.description, tags }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Suggestion failed");
+      if (!res.ok) throw new Error("Suggestion failed");
       // Map returned IDs → names (SearchableSelect multi-mode tracks by name)
       const suggestedNames = (data.tag_ids as number[])
         .map(id => tags.find(t => t.id === id)?.name)
@@ -191,7 +192,8 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
       set("tags", suggestedNames);
       setTagSuggestState("idle");
     } catch (err) {
-      setTagSuggestError(err instanceof Error ? err.message : "Something went wrong");
+      console.error("Tag suggestion error:", err);
+      setTagSuggestError("Suggestion failed. Please try again.");
       setTagSuggestState("error");
     }
   }
