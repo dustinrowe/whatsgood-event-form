@@ -6,18 +6,20 @@ interface Props {
   images: string[];
   onChange: (urls: string[]) => void;
   apiBase: string;
+  eventTitle?: string;
 }
 
-async function uploadFile(file: File, apiBase: string): Promise<string> {
+async function uploadFile(file: File, apiBase: string, eventTitle?: string): Promise<string> {
   const formData = new FormData();
   formData.append("file", file);
+  if (eventTitle) formData.append("event_title", eventTitle);
   const res = await fetch(`${apiBase}/public/upload-image`, { method: "POST", body: formData });
   if (!res.ok) throw new Error("Upload failed");
   const data = await res.json();
   return data.url;
 }
 
-export default function ImageUploader({ images, onChange, apiBase }: Props) {
+export default function ImageUploader({ images, onChange, apiBase, eventTitle }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadCount, setUploadCount] = useState(0);
@@ -33,7 +35,7 @@ export default function ImageUploader({ images, onChange, apiBase }: Props) {
 
     const results = await Promise.allSettled(
       Array.from(files).map(file =>
-        uploadFile(file, apiBase).then(url => {
+        uploadFile(file, apiBase, eventTitle).then(url => {
           setDoneCount(n => n + 1);
           return url;
         })
