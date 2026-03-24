@@ -494,6 +494,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
               onChange={urls => set("image_urls", urls)}
               apiBase={API_BASE}
               eventTitle={form.title}
+              customerUuid={customerUuid}
             />
             <FieldError msg={errors.image_urls} />
           </div>

@@ -7,19 +7,21 @@ interface Props {
   onChange: (urls: string[]) => void;
   apiBase: string;
   eventTitle?: string;
+  customerUuid?: string;
 }
 
-async function uploadFile(file: File, apiBase: string, eventTitle?: string): Promise<string> {
+async function uploadFile(file: File, apiBase: string, eventTitle?: string, customerUuid?: string): Promise<string> {
   const formData = new FormData();
   formData.append("file", file);
   if (eventTitle) formData.append("event_title", eventTitle);
+  if (customerUuid) formData.append("customer_uuid", customerUuid);
   const res = await fetch(`${apiBase}/public/upload-image`, { method: "POST", body: formData });
   if (!res.ok) throw new Error("Upload failed");
   const data = await res.json();
   return data.url;
 }
 
-export default function ImageUploader({ images, onChange, apiBase, eventTitle }: Props) {
+export default function ImageUploader({ images, onChange, apiBase, eventTitle, customerUuid }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadCount, setUploadCount] = useState(0);
@@ -35,7 +37,7 @@ export default function ImageUploader({ images, onChange, apiBase, eventTitle }:
 
     const results = await Promise.allSettled(
       Array.from(files).map(file =>
-        uploadFile(file, apiBase, eventTitle).then(url => {
+        uploadFile(file, apiBase, eventTitle, customerUuid).then(url => {
           setDoneCount(n => n + 1);
           return url;
         })
