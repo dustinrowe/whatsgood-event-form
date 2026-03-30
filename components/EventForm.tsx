@@ -69,6 +69,12 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
   const { branding, venues, tags, locations, promotion_tiers } = config;
   const primary = branding.primary_color || "#3B82F6";
 
+  // Treat tiers as valid only if the array is non-empty and every item has the
+  // minimum fields needed to render the PromotionModal without crashing.
+  const hasValidTiers = Array.isArray(promotion_tiers) &&
+    promotion_tiers.length > 0 &&
+    promotion_tiers.every(t => t && typeof t.id === "string" && typeof t.cta === "string" && Array.isArray(t.features));
+
   const [form, setForm] = useState<EventFormData>(initialForm);
   const [showPromo, setShowPromo] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -131,7 +137,28 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
       firstError?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
+    if (!hasValidTiers) {
+      handleDirectSubmit();
+      return;
+    }
     setShowPromo(true);
+  }
+
+  async function handleDirectSubmit() {
+    setLoading(true);
+    setError(null);
+    const tagIds = form.tags
+      .map(name => tags.find(t => t.name === name)?.id)
+      .filter((id): id is number => id !== undefined);
+    try {
+      await submitBasicEvent(customerUuid, form, tagIds);
+      onSuccess();
+    } catch (err) {
+      console.error("Submission error:", err);
+      setError("Something went wrong. Please try refreshing your page.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handlePromoSelect(tier: PromotionTier) {
@@ -511,10 +538,11 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
         <button
           type="button"
           onClick={handleSubmitClick}
-          className="w-full py-4 rounded-xl text-white font-semibold text-base shadow-sm transition-all hover:opacity-90 active:scale-[0.99]"
+          disabled={loading}
+          className="w-full py-4 rounded-xl text-white font-semibold text-base shadow-sm transition-all hover:opacity-90 active:scale-[0.99] disabled:opacity-60"
           style={{ backgroundColor: primary }}
         >
-          Continue
+          {loading ? "Submitting..." : "Continue"}
         </button>
 
         <p className="text-center text-xs text-gray-400 pb-6">
@@ -541,7 +569,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
         </div>
       )}
 
-      {showPromo && (
+      {showPromo && hasValidTiers && (
         <PromotionModal
           branding={branding}
           tiers={promotion_tiers}
