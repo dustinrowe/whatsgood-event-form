@@ -244,7 +244,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
           )}
           <div className="text-center">
             <h1 className="text-2xl font-bold text-gray-900">Submit Your Event</h1>
-            <p className="text-gray-500 text-sm mt-1">Fill out the form below to get your event listed{branding.city ? ` in ${branding.city}` : ""}.</p>
+            <p className="text-gray-500 text-sm mt-1">Fill out the form below to get your event listed.</p>
           </div>
         </div>
 
