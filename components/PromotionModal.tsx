@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import React, { useRef } from "react";
 import { TenantBranding, PromotionTierConfig } from "@/lib/types";
 
 interface Props {
@@ -9,9 +9,10 @@ interface Props {
   onSelect: (tier: PromotionTierConfig) => void;
   onClose: () => void;
   loading: boolean;
+  bottomOffset?: number | null;
 }
 
-export default function PromotionModal({ branding, tiers, onSelect, onClose, loading }: Props) {
+export default function PromotionModal({ branding, tiers, onSelect, onClose, loading, bottomOffset }: Props) {
   const primary = branding.primary_color || "#3B82F6";
   const scrollable = tiers.length >= 3;
 
@@ -39,10 +40,15 @@ export default function PromotionModal({ branding, tiers, onSelect, onClose, loa
     if (scrollRef.current) scrollRef.current.style.cursor = "grab";
   }
 
+  const modalStyle: React.CSSProperties = bottomOffset != null
+    ? { position: "absolute", bottom: bottomOffset, left: "50%", transform: "translateX(-50%)", width: "calc(100% - 24px)", maxWidth: "42rem" }
+    : { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "calc(100% - 24px)", maxWidth: "42rem" };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-black/50" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden relative"
+        style={modalStyle}
+        className="bg-white rounded-2xl shadow-2xl overflow-hidden relative"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}

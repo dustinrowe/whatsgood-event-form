@@ -77,6 +77,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
 
   const [form, setForm] = useState<EventFormData>(initialForm);
   const [showPromo, setShowPromo] = useState(false);
+  const [promoBottom, setPromoBottom] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [waitingForPayment, setWaitingForPayment] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -84,6 +85,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
   const [tagSuggestState, setTagSuggestState] = useState<"idle" | "loading" | "error">("idle");
   const [tagSuggestError, setTagSuggestError] = useState<string | null>(null);
   const waitingRef = useRef(false);
+  const submitRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     function handleMessage(e: MessageEvent) {
@@ -141,6 +143,8 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
       handleDirectSubmit();
       return;
     }
+    const rect = submitRef.current?.getBoundingClientRect();
+    setPromoBottom(rect ? window.innerHeight - rect.top + 10 : null);
     setShowPromo(true);
   }
 
@@ -176,7 +180,14 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
         // Open blank window synchronously (inside user gesture) to avoid popup blockers,
         // then navigate it to the Stripe URL once we have it.
         const stripeWindow = window.open("", "_blank");
-        const { checkout_url } = await createFeaturedCheckout(customerUuid, tier.id, form, tagIds);
+        let checkout_url: string;
+        try {
+          ({ checkout_url } = await createFeaturedCheckout(customerUuid, tier.id, form, tagIds));
+        } catch (err) {
+          // Close the blank tab so the user isn't left on an empty page
+          stripeWindow?.close();
+          throw err;
+        }
 
         if (stripeWindow) {
           stripeWindow.location.href = checkout_url;
@@ -536,6 +547,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
 
         {/* Submit */}
         <button
+          ref={submitRef}
           type="button"
           onClick={handleSubmitClick}
           disabled={loading}
@@ -576,6 +588,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
           onSelect={handlePromoSelect}
           onClose={() => { if (!loading) setShowPromo(false); }}
           loading={loading}
+          bottomOffset={promoBottom}
         />
       )}
     </div>
