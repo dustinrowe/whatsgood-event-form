@@ -13,7 +13,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://whatsgoodapi.u
 interface Props {
   customerUuid: string;
   config: PublicConfig;
-  onSuccess: () => void;
+  onSuccess: (bottomOffset?: number | null) => void;
 }
 
 const initialForm: EventFormData = {
@@ -86,6 +86,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
   const [tagSuggestError, setTagSuggestError] = useState<string | null>(null);
   const waitingRef = useRef(false);
   const submitRef = useRef<HTMLButtonElement>(null);
+  const promoBottomRef = useRef<number | null>(null);
 
   useEffect(() => {
     function handleMessage(e: MessageEvent) {
@@ -93,7 +94,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
       if (!waitingRef.current) return;
       if (e.data?.type === "payment_success") {
         waitingRef.current = false;
-        onSuccess();
+        onSuccess(promoBottomRef.current);
       } else if (e.data?.type === "payment_cancelled") {
         waitingRef.current = false;
         setWaitingForPayment(false);
@@ -139,16 +140,18 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
       firstError?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
+    const rect = submitRef.current?.getBoundingClientRect();
+    const bottomOffset = rect ? window.innerHeight - rect.top + 10 : null;
+    promoBottomRef.current = bottomOffset;
     if (!hasValidTiers) {
-      handleDirectSubmit();
+      handleDirectSubmit(bottomOffset);
       return;
     }
-    const rect = submitRef.current?.getBoundingClientRect();
-    setPromoBottom(rect ? window.innerHeight - rect.top + 10 : null);
+    setPromoBottom(bottomOffset);
     setShowPromo(true);
   }
 
-  async function handleDirectSubmit() {
+  async function handleDirectSubmit(bottomOffset?: number | null) {
     setLoading(true);
     setError(null);
     const tagIds = form.tags
@@ -156,7 +159,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
       .filter((id): id is number => id !== undefined);
     try {
       await submitBasicEvent(customerUuid, form, tagIds);
-      onSuccess();
+      onSuccess(bottomOffset);
     } catch (err) {
       console.error("Submission error:", err);
       setError("Something went wrong. Please try refreshing your page.");
@@ -175,7 +178,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
       if (!tier.stripe_price_id) {
         await submitBasicEvent(customerUuid, form, tagIds);
         setShowPromo(false);
-        onSuccess();
+        onSuccess(promoBottom);
       } else {
         // Open blank window synchronously (inside user gesture) to avoid popup blockers,
         // then navigate it to the Stripe URL once we have it.

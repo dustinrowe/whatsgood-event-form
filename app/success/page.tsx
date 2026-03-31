@@ -9,6 +9,8 @@ function SuccessContent() {
   const searchParams = useSearchParams();
   const customerUuid = searchParams.get("customer");
   const fromStripe = searchParams.get("from") === "stripe";
+  const bottomParam = searchParams.get("bottom");
+  const bottomOffset = bottomParam != null ? Number(bottomParam) : null;
   const cached = customerUuid ? getCachedBranding(customerUuid) : null;
   const [branding, setBranding] = useState<TenantBranding | null>(cached);
   const [ready, setReady] = useState(fromStripe || !!cached);
@@ -34,8 +36,8 @@ function SuccessContent() {
 
   if (fromStripe) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white p-8">
-        <div className="text-center max-w-md space-y-4">
+      <div className="min-h-screen relative bg-white">
+        <div className="text-center max-w-md space-y-4 px-4" style={bottomOffset != null ? { position: "absolute", bottom: bottomOffset, left: "50%", transform: "translateX(-50%)", width: "calc(100% - 24px)", maxWidth: "28rem" } : { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "calc(100% - 24px)", maxWidth: "28rem" }}>
           <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto">
             <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -52,8 +54,8 @@ function SuccessContent() {
   const primary = branding?.primary_color || "#3B82F6";
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white p-8">
-      <div className="text-center max-w-md space-y-4">
+    <div className="min-h-screen relative bg-white">
+      <div className="text-center space-y-4 px-4" style={bottomOffset != null ? { position: "absolute", bottom: bottomOffset, left: "50%", transform: "translateX(-50%)", width: "calc(100% - 24px)", maxWidth: "28rem" } : { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "calc(100% - 24px)", maxWidth: "28rem" }}>
         <div
           className="w-16 h-16 rounded-full flex items-center justify-center mx-auto"
           style={{ backgroundColor: `${primary}20` }}

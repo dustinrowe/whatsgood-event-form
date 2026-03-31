@@ -68,8 +68,9 @@ function EmbedContent() {
     return () => clearInterval(id);
   }, [customerUuid]);
 
-  function handleSuccess() {
-    router.push(`/success?customer=${customerUuid}`);
+  function handleSuccess(bottomOffset?: number | null) {
+    const bottom = bottomOffset != null ? `&bottom=${Math.round(bottomOffset)}` : "";
+    router.push(`/success?customer=${customerUuid}${bottom}`);
   }
 
   if (error) {
