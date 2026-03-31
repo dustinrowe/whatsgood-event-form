@@ -14,7 +14,7 @@ interface Props {
 
 export default function PromotionModal({ branding, tiers, onSelect, onClose, loading, bottomOffset }: Props) {
   const primary = branding.primary_color || "#3B82F6";
-  const scrollable = tiers.length >= 3;
+  const scrollable = true;
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const dragState = useRef({ dragging: false, startX: 0, scrollLeft: 0, moved: false });
@@ -58,45 +58,29 @@ export default function PromotionModal({ branding, tiers, onSelect, onClose, loa
         </div>
 
         {/* Cards */}
-        {scrollable ? (
-          <div
-            ref={scrollRef}
-            className="flex gap-4 overflow-x-auto snap-x snap-mandatory pl-5 pb-6 select-none"
-            style={{ cursor: "grab", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
-            onMouseDown={onMouseDown}
-            onMouseMove={onMouseMove}
-            onMouseUp={onMouseUp}
-            onMouseLeave={onMouseUp}
-          >
-            {tiers.map(tier => (
-              <TierCard
-                key={tier.id}
-                tier={tier}
-                primary={primary}
-                loading={loading}
-                onSelect={onSelect}
-                scrollable
-                getDragged={() => dragState.current.moved}
-              />
-            ))}
-            {/* Right padding sentinel — matches pl-5 so padding is visible after last card */}
-            <div className="min-w-5 flex-shrink-0" />
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-4 px-5 pb-5">
-            {tiers.map(tier => (
-              <TierCard
-                key={tier.id}
-                tier={tier}
-                primary={primary}
-                loading={loading}
-                onSelect={onSelect}
-                scrollable={false}
-                getDragged={() => false}
-              />
-            ))}
-          </div>
-        )}
+        <div
+          ref={scrollRef}
+          className="flex gap-4 overflow-x-auto snap-x snap-mandatory pl-5 pb-6 select-none"
+          style={{ cursor: "grab", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
+          onMouseDown={onMouseDown}
+          onMouseMove={onMouseMove}
+          onMouseUp={onMouseUp}
+          onMouseLeave={onMouseUp}
+        >
+          {tiers.map(tier => (
+            <TierCard
+              key={tier.id}
+              tier={tier}
+              primary={primary}
+              loading={loading}
+              onSelect={onSelect}
+              scrollable
+              getDragged={() => dragState.current.moved}
+            />
+          ))}
+          {/* Right padding sentinel — matches pl-5 so padding is visible after last card */}
+          <div className="min-w-5 flex-shrink-0" />
+        </div>
 
         {/* Close */}
         <button
@@ -129,7 +113,7 @@ function TierCard({
   getDragged: () => boolean;
 }) {
   const isPaid = !!tier.stripe_price_id;
-  const sizeClass = scrollable ? "min-w-[240px] max-w-[240px] snap-start" : "";
+  const sizeClass = "min-w-[220px] max-w-[260px] snap-start flex-1";
 
   function handleSelect() {
     if (getDragged()) return;
