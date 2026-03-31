@@ -60,7 +60,7 @@ export default function PromotionModal({ branding, tiers, onSelect, onClose, loa
         {/* Cards */}
         <div
           ref={scrollRef}
-          className="flex gap-4 overflow-x-auto snap-x snap-mandatory pl-5 pb-6 select-none"
+          className="flex gap-4 overflow-x-auto snap-x snap-mandatory pl-5 pr-5 pb-6 select-none"
           style={{ cursor: "grab", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" } as React.CSSProperties}
           onMouseDown={onMouseDown}
           onMouseMove={onMouseMove}
@@ -113,7 +113,7 @@ function TierCard({
   getDragged: () => boolean;
 }) {
   const isPaid = !!tier.stripe_price_id;
-  const sizeClass = "min-w-[220px] max-w-[260px] snap-start flex-1";
+  const sizeClass = "min-w-[220px] snap-start flex-1";
 
   function handleSelect() {
     if (getDragged()) return;
