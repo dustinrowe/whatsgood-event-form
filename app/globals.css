@@ -29,3 +29,37 @@ body {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+/* Rich text editor (react-quill-new / Quill snow) — match the form's inputCls look */
+.rte .ql-toolbar.ql-snow {
+  border: 1px solid #e5e7eb; /* gray-200 */
+  border-top-left-radius: 0.75rem;
+  border-top-right-radius: 0.75rem;
+  border-bottom: 0;
+  background: #fff;
+}
+.rte .ql-container.ql-snow {
+  border: 1px solid #e5e7eb;
+  border-bottom-left-radius: 0.75rem;
+  border-bottom-right-radius: 0.75rem;
+  font-family: inherit;
+  font-size: 0.875rem; /* text-sm */
+  color: #111827; /* gray-900 */
+}
+.rte .ql-editor {
+  min-height: 120px;
+}
+.rte .ql-editor.ql-blank::before {
+  color: #9ca3af; /* gray-400, matches placeholder-gray-400 */
+  font-style: normal;
+  left: 1rem;
+  right: 1rem;
+}
+.rte:focus-within .ql-toolbar.ql-snow,
+.rte:focus-within .ql-container.ql-snow {
+  border-color: var(--brand-primary, #3b82f6);
+}
+.rte-error .ql-toolbar.ql-snow,
+.rte-error .ql-container.ql-snow {
+  border-color: #f87171; /* red-400 */
+}

@@ -1,4 +1,5 @@
 import { EventFormData, PublicConfig } from "./types";
+import { normalizeQuillHtml } from "./text";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://whatsgoodapi.up.railway.app";
 
@@ -52,7 +53,7 @@ export async function submitBasicEvent(
     body: JSON.stringify({
       customer_uuid: customerUuid,
       title: form.title,
-      description: form.description,
+      description: normalizeQuillHtml(form.description),
       submitter_email: form.submitter_email,
       website_url: form.website_url,
       address: form.address,
@@ -91,7 +92,7 @@ export async function createFeaturedCheckout(
       event: {
         customer_uuid: customerUuid,
         title: form.title,
-        description: form.description,
+        description: normalizeQuillHtml(form.description),
         submitter_email: form.submitter_email,
         website_url: form.website_url,
         address: form.address,

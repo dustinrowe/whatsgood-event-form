@@ -7,6 +7,8 @@ import PromotionModal from "./PromotionModal";
 import ImageUploader from "./ImageUploader";
 import SearchableSelect from "./SearchableSelect";
 import DateTimePicker from "./DateTimePicker";
+import RichTextEditor from "./RichTextEditor";
+import { isRichTextEmpty } from "@/lib/text";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "https://whatsgoodapi.up.railway.app";
 
@@ -281,12 +283,11 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
 
           <div data-error={!!errors.description}>
             <Label required>Description</Label>
-            <textarea
-              className={`${inputCls(!!errors.description)} min-h-[120px] resize-y`}
-              style={focusRingStyle}
-              placeholder="Tell people what to expect at your event..."
+            <RichTextEditor
               value={form.description}
-              onChange={e => set("description", e.target.value)}
+              hasError={!!errors.description}
+              placeholder="Tell people what to expect at your event..."
+              onChange={html => set("description", isRichTextEmpty(html) ? "" : html)}
             />
             <FieldError msg={errors.description} />
           </div>
