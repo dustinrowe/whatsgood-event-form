@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { stripHtml } from "@/lib/text";
 
 // ---------------------------------------------------------------------------
 // Rate limiting — 5 requests per IP per hour (in-memory, resets on cold start)
@@ -46,7 +47,10 @@ export async function POST(req: NextRequest) {
 
   const { title, description, tags } = body;
 
-  if (!title?.trim() && !description?.trim()) {
+  // Description now arrives as rich-text HTML — feed the model plain text only.
+  const plainDescription = stripHtml(description ?? "");
+
+  if (!title?.trim() && !plainDescription) {
     return NextResponse.json(
       { error: "Provide a title or description first." },
       { status: 400 }
@@ -75,7 +79,7 @@ ${tagList}`,
       {
         role: "user",
         content: `Title: ${title || "(none)"}
-Description: ${description || "(none)"}`,
+Description: ${plainDescription || "(none)"}`,
       },
     ],
   });
