@@ -35,6 +35,7 @@ const initialForm: EventFormData = {
   recurrence: "",
   tags: [],
   categories: [],
+  custom_fields: {},
   image_urls: [],
 };
 
@@ -70,6 +71,17 @@ function Section({ children }: { children: React.ReactNode }) {
 export default function EventForm({ customerUuid, config, onSuccess }: Props) {
   const { branding, venues, tags, locations, promotion_tiers } = config;
   const primary = branding.primary_color || "#3B82F6";
+
+  // ENG-314: admin-configured field list. When present it drives show/hide for
+  // standard fields and renders the enabled custom fields. When absent (old
+  // backend / fail-soft), fall back to the legacy hardcoded fields.
+  const formFields = config.fields ?? [];
+  const hasFieldConfig = formFields.length > 0;
+  const enabledKeys = new Set(formFields.map(f => f.key));
+  const showStd = (key: string) => !hasFieldConfig || enabledKeys.has(key);
+  // Custom fields rendered as multi-selects (boolean customs like "featured" are
+  // admin-set, not user-submitted, so they're excluded here).
+  const customFormFields = formFields.filter(f => f.scope === "custom" && f.type !== "boolean");
 
   // Treat tiers as valid only if the array is non-empty and every item has the
   // minimum fields needed to render the PromotionModal without crashing.
@@ -116,6 +128,23 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
     setErrors(e => { const n = { ...e }; delete n[field]; return n; });
   }
 
+  // Custom-field selections are tracked by option NAME (like tags) and converted
+  // to ids on submit.
+  function setCustom(key: string, names: string[]) {
+    setForm(f => ({ ...f, custom_fields: { ...f.custom_fields, [key]: names } }));
+  }
+
+  /** Convert tracked custom-field names → option ids, keyed by custom_fields category. */
+  function customFieldIds(): Record<string, (number | string)[]> {
+    const out: Record<string, (number | string)[]> = {};
+    for (const f of customFormFields) {
+      const names = form.custom_fields[f.key] ?? [];
+      if (!names.length) continue;
+      out[f.key] = f.options.filter(o => names.includes(o.name)).map(o => o.id);
+    }
+    return out;
+  }
+
   function validate(): boolean {
     const e: Record<string, string> = {};
     if (!form.title.trim()) e.title = "Required";
@@ -125,11 +154,11 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
     if (!form.website_url.trim()) e.website_url = "Required";
     if (!form.venue_id) {
       if (!form.address.trim()) e.address = "Required";
-      if (!form.location_id) e.location_id = "Required";
+      if (showStd("locations") && !form.location_id) e.location_id = "Required";
     }
     if (!form.start_date) e.start_date = "Required";
     if (form.recurrence && !form.end_date) e.end_date = "Required when recurring";
-    if (form.tags.length === 0) e.tags = "Select at least one tag";
+    if (showStd("tags") && form.tags.length === 0) e.tags = "Select at least one tag";
     if (form.image_urls.length === 0) e.image_urls = "At least one image is required";
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -160,7 +189,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
       .map(name => tags.find(t => t.name === name)?.id)
       .filter((id): id is number => id !== undefined);
     try {
-      await submitBasicEvent(customerUuid, form, tagIds);
+      await submitBasicEvent(customerUuid, form, tagIds, customFieldIds());
       onSuccess(bottomOffset);
     } catch (err) {
       console.error("Submission error:", err);
@@ -178,7 +207,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
       .filter((id): id is number => id !== undefined);
     try {
       if (!tier.stripe_price_id) {
-        await submitBasicEvent(customerUuid, form, tagIds);
+        await submitBasicEvent(customerUuid, form, tagIds, customFieldIds());
         setShowPromo(false);
         onSuccess(promoBottom);
       } else {
@@ -187,7 +216,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
         const stripeWindow = window.open("", "_blank");
         let checkout_url: string;
         try {
-          ({ checkout_url } = await createFeaturedCheckout(customerUuid, tier.id, form, tagIds));
+          ({ checkout_url } = await createFeaturedCheckout(customerUuid, tier.id, form, tagIds, customFieldIds()));
         } catch (err) {
           // Close the blank tab so the user isn't left on an empty page
           stripeWindow?.close();
@@ -324,6 +353,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
             </div>
           </div>
 
+          {showStd("tags") && (
           <div data-error={!!errors.tags}>
             <div className="flex items-center justify-between mb-1.5">
               <Label required>Tags</Label>
@@ -363,6 +393,25 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
             {tagSuggestError && <p className="mt-1 text-xs text-amber-600">{tagSuggestError}</p>}
             <FieldError msg={errors.tags} />
           </div>
+          )}
+
+          {/* Custom fields (ENG-314) — every admin-enabled custom field, any name */}
+          {customFormFields.map(f => {
+            const opts = f.options.map(o => ({ id: Number(o.id), name: o.name }));
+            return (
+              <div key={f.key}>
+                <Label>{f.label}</Label>
+                <SearchableSelect
+                  mode="multi"
+                  options={opts}
+                  selected={form.custom_fields[f.key] ?? []}
+                  onChange={v => setCustom(f.key, v)}
+                  placeholder={`Search ${f.label.toLowerCase()}...`}
+                  primaryColor={primary}
+                />
+              </div>
+            );
+          })}
         </Section>
 
         {/* Section 2: Date & Time */}
@@ -444,6 +493,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
         <Section>
           <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Location</h2>
 
+          {showStd("venues") && (
           <div>
             <Label>Venue</Label>
             <p className="text-xs text-gray-400 mb-1.5">Can't find yours? Leave blank and fill in the address below.</p>
@@ -461,9 +511,11 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
               primaryColor={primary}
             />
           </div>
+          )}
 
           {!form.venue_id && (
             <>
+              {showStd("locations") && (
               <div data-error={!!errors.location_id}>
                 <Label required>Location / Area</Label>
                 <SearchableSelect
@@ -477,6 +529,7 @@ export default function EventForm({ customerUuid, config, onSuccess }: Props) {
                 />
                 <FieldError msg={errors.location_id} />
               </div>
+              )}
 
               <div data-error={!!errors.address}>
                 <Label required>Address</Label>

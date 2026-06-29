@@ -45,7 +45,8 @@ export async function fetchConfig(customerUuid: string): Promise<PublicConfig> {
 export async function submitBasicEvent(
   customerUuid: string,
   form: EventFormData,
-  tagIds: number[]
+  tagIds: number[],
+  customFields: Record<string, (number | string)[]> = {}
 ): Promise<{ event_id: number }> {
   const res = await fetchWithRetry(`${API_BASE}/public/events`, {
     method: "POST",
@@ -66,6 +67,7 @@ export async function submitBasicEvent(
       end_date: form.end_date || null,
       tags: tagIds,
       categories: form.categories,
+      custom_fields: customFields,
       image_urls: form.image_urls,
       recurrence: form.recurrence || null,
     }),
@@ -81,7 +83,8 @@ export async function createFeaturedCheckout(
   customerUuid: string,
   tierId: string,
   form: EventFormData,
-  tagIds: number[]
+  tagIds: number[],
+  customFields: Record<string, (number | string)[]> = {}
 ): Promise<{ checkout_url: string; event_id: number }> {
   const res = await fetchWithRetry(`${API_BASE}/public/stripe/checkout`, {
     method: "POST",
@@ -105,6 +108,7 @@ export async function createFeaturedCheckout(
         end_date: form.end_date || null,
         tags: tagIds,
         categories: form.categories,
+        custom_fields: customFields,
         image_urls: form.image_urls,
         recurrence: form.recurrence || null,
       },

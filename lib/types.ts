@@ -29,12 +29,30 @@ export interface LocationOption {
   name: string;
 }
 
+export interface FormFieldOption {
+  id: number | string;
+  name: string;
+  description?: string | null;
+  address?: string | null;
+}
+
+/** An enabled, admin-configured field for the form (ENG-314). */
+export interface FormField {
+  key: string;     // submit identity: standard key (tags/venues/locations/category) or custom_fields category
+  label: string;
+  type: string;    // multiSelect | select | boolean | …
+  scope: "standard" | "custom";
+  source: string;  // tags | venues | locations | categories | custom
+  options: FormFieldOption[];
+}
+
 export interface PublicConfig {
   branding: TenantBranding;
   tags: TagOption[];
   categories: CategoryOption[];
   venues: VenueOption[];
   locations: LocationOption[];
+  fields?: FormField[];   // ENG-314: enabled fields; when present, drives show/hide + custom fields
   promotion_tiers: PromotionTierConfig[];
 }
 
@@ -55,6 +73,7 @@ export interface EventFormData {
   recurrence: string; // "" | "daily" | "weekly"
   tags: string[];
   categories: string[];
+  custom_fields: Record<string, string[]>;  // ENG-314: {field key → selected option NAMES} (converted to ids on submit)
   image_urls: string[];
 }
 
