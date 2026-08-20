@@ -20,6 +20,31 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Description rich text
+
+The Description field is Quill (`react-quill-new` → `quill@~2.0.3`). Two things about
+its output are worth knowing before you touch `lib/api.ts`:
+
+- **Quill turns every space into `&nbsp;`.** Its HTML serializer literally runs
+  `escapeText(...).replaceAll(" ", "&nbsp;")`, and `react-quill-new` uses
+  `getSemanticHTML()` by default. A submitted paragraph therefore arrives downstream as a
+  single unbreakable token, and the admin portal — which draws descriptions with
+  `overflow-wrap: anywhere` — had to split it mid-word ("Court street for lo / cal
+  vendors"). That was ENG-425.
+- **Quill writes blank lines as `<p></p>`,** which has no line box and vanishes when
+  rendered as HTML.
+
+`prepareDescriptionHtml()` in `lib/text.ts` fixes both, and is the only thing that should
+be applied to a description on its way out. Both submit paths in `lib/api.ts` — the free
+`submitBasicEvent` and the paid `createFeaturedCheckout` — call it. Add a third submit path
+and it must call it too.
+
+## Tests
+
+```bash
+npm test   # node --test over lib/**/*.test.ts, no framework
+```
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
